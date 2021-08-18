@@ -4,6 +4,7 @@ import User from '../models/userModel.js';
 import Stock from '../models/stockModel.js'; // Import Stock as we need to get info for user account
 import bcrypt from 'bcrypt';
 import { generateToken } from '../util/midware.js';
+import e from 'express';
 
 const userRouter = express.Router();
 
@@ -250,13 +251,18 @@ userRouter.put("/sell/stock/:id", expressAsyncHandler( async(req, res) => {
 userRouter.put("/subscribe/:id", expressAsyncHandler( async(req, res) => {
     if (req.body.id !== req.params.id) {
         try {  //Use try/catch here for clarity since potential errors on > 1 operation
-            const user = await User.findById(req.params.id);
-            if (!user.subscriptions.includes(req.body.code)) {
-                // Update followers of target and following of current user
-                await user.updateOne({ $push: { subscriptions: req.body.code }});
-                res.status(200).send({success: true, message: "Endpoint successfully subscribed to"})
+            const stock = await Stock.find({"code": req.body.code})
+            if (stock) {
+                const user = await User.findById(req.params.id);
+                if (!user.subscriptions.includes(req.body.code)) {
+                    // Update followers of target and following of current user
+                    await user.updateOne({ $push: { subscriptions: req.body.code }});
+                    res.status(200).send({success: true, message: "Endpoint successfully subscribed to"})
+                } else {
+                    res.status(403).send({success: false, error: "You already subscribe to this endpoint"});
+                }
             } else {
-                res.status(403).send({success: false, error: "You already subscribe to this endpoint"});
+                res.status(403).send({success: false, error: "Endpoint doesn't exist"});
             }
         } catch (err) {
             res.status(500).send({success: false, error: err});
@@ -269,13 +275,18 @@ userRouter.put("/subscribe/:id", expressAsyncHandler( async(req, res) => {
 userRouter.put("/unsubscribe/:id", expressAsyncHandler( async(req, res) => {
     if (req.body.id !== req.params.id) {
         try {  //Use try/catch here for clarity since potential errors on > 1 operation
-            const user = await User.findById(req.params.id);
-            if (user.subscriptions.includes(req.body.code)) {
-                // Update followers of target and following of current user
-                await user.updateOne({ $pull: { subscriptions: req.body.code }});
-                res.status(200).send({success: true, message: "Endpoint successfully unsubscribed to"})
+            const stock = await Stock.find({"code": req.body.code})
+            if (stock) {
+                const user = await User.findById(req.params.id);
+                if (user.subscriptions.includes(req.body.code)) {
+                    // Update followers of target and following of current user
+                    await user.updateOne({ $pull: { subscriptions: req.body.code }});
+                    res.status(200).send({success: true, message: "Endpoint successfully unsubscribed to"})
+                } else {
+                    res.status(403).send({success: false, error: "You aren't subscribed to this endpoint"});
+                }
             } else {
-                res.status(403).send({success: false, error: "You aren't subscribed to this endpoint"});
+                res.status(403).send({success: false, error: "Endpoint doesn't exist"})
             }
         } catch (err) {
             res.status(500).send({success: false, error: err});
