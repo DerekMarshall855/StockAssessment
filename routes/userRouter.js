@@ -59,7 +59,7 @@ userRouter.post('/signin', expressAsyncHandler(async(req, res) => {
 // Update name and/or password
 userRouter.put("/:id", expressAsyncHandler(async (req, res) => {
     // If we were adding admin feature do || req.body.isAdmin
-    if (req.body._id === req.params.id) {
+    if (req.body.id === req.params.id) {
         if(req.body.name && req.body.name.indexOf(' ') >= 0) {
             res.status(403).send({success: false, error: "Username must not contain spaces"})
         } else {
@@ -91,7 +91,7 @@ userRouter.put("/:id", expressAsyncHandler(async (req, res) => {
 
 // Delete single user
 userRouter.delete("/:id", expressAsyncHandler(async (req, res) => {
-    if (req.body._id === req.params.id) {
+    if (req.body.id === req.params.id) {
         await User.findByIdAndDelete(req.params.id)
             .catch(err => {
                 res.status(500).send({success: false, error: err});
@@ -127,8 +127,23 @@ userRouter.get('/:id', expressAsyncHandler( async( req, res) => {
 // HERE ID ALWAYS REFERS TO USERID, PASS STOCKCODE THROUGH req.body
 
 // Add to wallet (get amount, add amount to wallet with update)
-userRouter.put("/add/wallet", expressAsyncHandler( async(req, res) => {
-    //TODO
+userRouter.put("/add/wallet/:id", expressAsyncHandler( async(req, res) => {
+    if (req.body.amount && req.body.amount > 0) {
+        if (req.body.id === req.params.id) {
+            const user = await User.findById(req.params.id,)
+                .catch(err => {
+                    res.status(500).send({success: false, error: err});
+                    return;
+                });
+            const newVal = user.wallet + req.body.amount;
+            await user.updateOne({wallet: newVal});
+            res.status(200).send({success: true, message: "Wallet successfully updated"});
+        } else {
+            res.status(401).send({success: false, error: "You can only update your own wallet"});
+        }
+    } else {
+        req.status(403).send({success: false, error: "You cannot add a negative value to wallet"})
+    }
 }));
 
 // Get wallet (Get amount in wallet given userId [Should only be able to view own wallet])
