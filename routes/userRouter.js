@@ -1,6 +1,7 @@
 import express from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
+import Stock from '../models/stockModel.js'; // Import Stock as we need to get info for user account
 import bcrypt from 'bcrypt';
 import { generateToken } from '../util/midware.js';
 
@@ -123,18 +124,38 @@ userRouter.get('/:id', expressAsyncHandler( async( req, res) => {
 
 }));
 
-// Add wallet (get amount, add amount to wallet with update)
+// HERE ID ALWAYS REFERS TO USERID, PASS STOCKCODE THROUGH req.body
+
+// Add to wallet (get amount, add amount to wallet with update)
+userRouter.put("/add/wallet", expressAsyncHandler( async(req, res) => {
+    //TODO
+}));
 
 // Get wallet (Get amount in wallet given userId [Should only be able to view own wallet])
+userRouter.get("/wallet/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}));
 
 // Buy Stock (Check stock value, check if user wallet funds ok, sub stock value from wallet, add stock to map)
+userRouter.put("/buy/stock/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}));
 
 // Sell stock (Check if amount of stock in map, calc total value of stock, remove from map, add val to wallet)
-
+userRouter.put("/sell/stock/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}));
 // Subscribe (Add stockId to subscription endpoints)
-
+userRouter.put("/subscribe/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}))
 // Unsubscribe (Pull stockId from subscriptions)
-
+userRouter.put("/unsubscribe/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}))
 // Get portfolio (Get map, use forEach to add each stock + amount to array, return array)
+userRouter.get("/portfolio/:id", expressAsyncHandler( async(req, res) => {
+    //TODO
+}));
 
 export default userRouter;
