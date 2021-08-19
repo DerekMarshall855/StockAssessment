@@ -4,7 +4,6 @@ import User from '../models/userModel.js';
 import Stock from '../models/stockModel.js'; // Import Stock as we need to get info for user account
 import bcrypt from 'bcrypt';
 import { generateToken } from '../util/midware.js';
-import e from 'express';
 
 const userRouter = express.Router();
 

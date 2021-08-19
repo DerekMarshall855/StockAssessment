@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 
-// Express settings
+// Express settings for CORS
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, authorization");
@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
     res.status(200).send("Server is ready");
 })
 
-// Error
+// Default/undefined error
 app.use((err, res, req, next) => {
     res.status(500).send({message: err.message});
 })
