@@ -34,10 +34,10 @@ userRouter.post('/register', expressAsyncHandler(async(req, res) => {
 
 userRouter.post('/signin', expressAsyncHandler(async(req, res) => {
     if (!req.body.name || !req.body.password) {
-        res.status(400).send({success: false, message: "Missing Username or Password"});
+        res.status(400).send({success: false, error: "Missing Username or Password"});
     } else {
         const user = await User.findOne({name: req.body.name});
-        if (user) {
+        if (user !== null) {
             if (bcrypt.compareSync(req.body.password, user.password)) {
                 res.status(200).send({
                     success: true,
@@ -47,10 +47,10 @@ userRouter.post('/signin', expressAsyncHandler(async(req, res) => {
                 });
                 return;
             } else {
-                res.status(401).send({success: false, message: "Invalid Password"});
+                res.status(401).send({success: false, error: "Invalid Password"});
             }
         } else {
-            res.status(401).send({success: false, message: "Invalid Username"});
+            res.status(406).send({success: false, error: "User doesn't exist"});
         }
     }
 }));
@@ -118,9 +118,13 @@ userRouter.get('/:id', expressAsyncHandler( async( req, res) => {
             res.status(500).send({success: false, error: err});
             return;
         });
+    if (user !== null) {
+        const {password, ...everythingElse} = user;  // Deconstruct user JSON to split password info from all other info, send this back
+        res.status(200).send({success: true, message: everythingElse._doc});
+    } else {
+        res.status(406).send({success: false, error: "User doesn't exist"});
+    }
 
-    const {password, ...everythingElse} = user;  // Deconstruct user JSON to split password info from all other info, send this back
-    res.status(200).send({success: true, message: everythingElse._doc});
 
 
 }));
@@ -136,133 +140,160 @@ userRouter.put("/add/wallet/:id", expressAsyncHandler( async(req, res) => {
                     res.status(500).send({success: false, error: err});
                     return;
                 });
-            const newVal = user.wallet + req.body.amount;
-            await user.updateOne({wallet: newVal});
-            res.status(200).send({success: true, message: "Wallet successfully updated"});
+            if (user !== null) {
+                const newVal = user.wallet + req.body.amount;
+                await user.updateOne({wallet: newVal});
+                res.status(200).send({success: true, message: "Wallet successfully updated"});
+            } else {
+                res.status(406).send({success:false, error: "User doesn't exist"})
+            }
+
         } else {
             res.status(401).send({success: false, error: "You can only update your own wallet"});
         }
     } else {
-        req.status(403).send({success: false, error: "You cannot add a negative value to wallet"})
+        res.status(403).send({success: false, error: "You cannot add a negative value to wallet"})
     }
 }));
 
 // Get wallet (Get amount in wallet given userId [Should only be able to view own wallet])
 userRouter.get("/wallet/:id", expressAsyncHandler( async(req, res) => {
-    if (req.params.id === req.body.id) {
-        const user = await User.findById(req.params.id)
-        .catch(err => {
-            res.status(500).send({
-                success: false,
-                error: err
-            });
-            return;
+    const user = await User.findById(req.params.id)
+    .catch(err => {
+        res.status(500).send({
+            success: false,
+            error: err
         });
+        return;
+    });
+    if (user !== null) {
         res.status(200).send({
             success: true,
             message: user.wallet
         })
     } else {
-        res.status(403).send({
-            success: false,
-            error: "You can only get your own wallet"
-        });
-    }    
+        res.status(406).send({success:false, error: "User doesn't exist"})
+    }
 }));
 
 // Buy Stock (Check stock value, check if user wallet funds ok, sub stock value from wallet, add stock to map)
 userRouter.put("/buy/stock/:id", expressAsyncHandler( async(req, res) => {
     if (req.body.id === req.params.id) {
-        const stock = await Stock.find({"code": req.body.code})
+        const stock = await Stock.findOne({"code": req.body.code})
             .catch(err => {
                 res.status(500).send({
                     success: false,
                     error: err
                 });
             });
-        if (stock) {
+        if (stock !== null) {
             const user = await User.findById(req.params.id)
                 .catch(err => {
                     res.status(500).send({success: false, error: err});
                     return;
                 });
-            const newVal = user.wallet - (stock.value * (req.body.amount ? req.body.amount : 1));  // Either sent # to purchase or default 1
-            if (newVal >= 0) {
-                if (user.heldShares.has(req.body.code)) {
-                    const shares = user.heldShares.set(req.body.code, user.heldShares.get(req.body.code) + (req.body.amount ? req.body.amount : 1));
+            if (user !== null) {
+                const amount = req.body.amount != null ? req.body.amount : 1;  // Either sent # to purchase or default 1
+                const newVal = user.wallet - (stock.value * amount);  
+                if (newVal >= 0) {
+                    let shares = user.heldShares;
+                    if (user.heldShares.has(req.body.code)) {
+                        shares.set(req.body.code, shares.get(req.body.code) + (amount));
+                    } else {
+                        shares.set(req.body.code, amount);
+                    }
+                    await user.updateOne({wallet: newVal, heldShares: shares})
+                        .catch(err => {
+                            res.status(500).send({success: false, error: err});
+                            return;
+                        });
+                    res.status(200).send({success: true, message: "Share purchase successful"});
                 } else {
-                    const shares = user.heldShares.set(req.body.code, req.body.amount ? req.body.amount : 1);
+                    res.status(401).send({success: false, error: "Insufficient funds"});
                 }
-                await user.updateOne({wallet: newVal, heldShares: shares});
-                res.status(200).send({success: true, message: "Wallet successfully updated"});
             } else {
-                req.status(401).send({success: false, error: "Insufficient funds"});
+                res.status(406).send({success:false, error: "User doesn't exist"})
             }
+            
         } else {
-            req.status(403).send({success: false, error: "Requested stock doesn't exist"});
+            res.status(406).send({success: false, error: "Requested stock doesn't exist"});
         }
     } else {
-        req.status(401).send({success: false, error: "You can only buy stocks for your own account"});
+        res.status(401).send({success: false, error: "You can only buy stocks for your own account"});
     }
 }));
 
 // Sell stock (Check if amount of stock in map, calc total value of stock, remove from map, add val to wallet)
 userRouter.put("/sell/stock/:id", expressAsyncHandler( async(req, res) => {
     if (req.body.id === req.params.id) {
-        const stock = await Stock.find({"code": req.body.code})
+        const stock = await Stock.findOne({"code": req.body.code})
             .catch(err => {
                 res.status(500).send({
                     success: false,
                     error: err
                 });
             });
-        if (stock) {
+        if (stock !== null) {
             const user = await User.findById(req.params.id)
                 .catch(err => {
                     res.status(500).send({success: false, error: err});
                     return;
                 });
-            // Check if user has shares, if they do check if they have the amount they want to sell
-            if (user.heldShares.has(req.body.code) && user.heldShares.get(req.body.code) > (req.body.amount ? req.body.amount : 1)) {
-                const newVal = user.wallet + (stock.value * (req.body.amount ? req.body.amount : 1));
-                const shares = user.heldShares.set(req.body.code, user.heldShares.get(req.body.code) - (req.body.amount ? req.body.amount : 1));
-                await user.updateOne({
-                    wallet: netVal,
-                    heldShares: shares
-                });
-                res.status(200).send({
-                    success: true,
-                    message: "Shares successfully sold"
-                });
+            if (user !== null) {
+                // Check if user has shares, if they do check if they have the amount they want to sell
+                const amount = req.body.amount != null ? req.body.amount : 1;
+                if (user.heldShares.has(req.body.code) && user.heldShares.get(req.body.code) > amount) {
+                    const newVal = user.wallet + (stock.value * amount);
+                    let shares = user.heldShares;
+                    shares.set(req.body.code, shares.get(req.body.code) - amount);
+                    await user.updateOne({
+                        wallet: newVal,
+                        heldShares: shares
+                    }).catch(err => {
+                        res.status(500).send({success: false, error: err});
+                    })
+                    res.status(200).send({
+                        success: true,
+                        message: "Shares successfully sold"
+                    });
+                } else {
+                    res.status(401).send({
+                        success: false,
+                        error: "You can't sell shares you don't own"
+                    })
+                }
             } else {
-                res.status(401).send({
-                    success: false,
-                    error: "You can't sell shares you don't own"
-                })
+                res.status(406).send({success: false, error: "User doesn't exist"})
             }
+
         } else {
-            req.status(403).send({success: false, error: "Requested stock doesn't exist"});
+            res.status(406).send({success: false, error: "Requested stock doesn't exist"});
         }
     } else {
-        req.status(401).send({success: false, error: "You can only buy stocks for your own account"});
+        res.status(401).send({success: false, error: "You can only sell stocks for your own account"});
     }
 }));
 // Subscribe (Add stockId to subscription endpoints)
 userRouter.put("/subscribe/:id", expressAsyncHandler( async(req, res) => {
-    if (req.body.id !== req.params.id) {
+    if (req.body.id === req.params.id) {
         try {  //Use try/catch here for clarity since potential errors on > 1 operation
-            const stock = await Stock.find({"code": req.body.code})
-            if (stock) {
+            const stock = await Stock.findOne({"code": req.body.code})
+            if (stock !== null) {
                 const user = await User.findById(req.params.id);
-                if (!user.subscriptions.includes(req.body.code)) {
-                    // Update followers of target and following of current user
-                    await user.updateOne({ $push: { subscriptions: req.body.code }});
-                    res.status(200).send({success: true, message: "Endpoint successfully subscribed to"})
+                if (user !== null) {
+                    if (!user.subscriptions.includes(req.body.code)) {
+                        // Update followers of target and following of current user
+                        await user.updateOne({ $push: { subscriptions: req.body.code }});
+                        res.status(200).send({success: true, message: "Endpoint successfully subscribed to"})
+                    } else {
+                        res.status(403).send({success: false, error: "You already subscribe to this endpoint"});
+                    }
                 } else {
-                    res.status(403).send({success: false, error: "You already subscribe to this endpoint"});
+                    res.status(406).send({success: false, error: "User doesn't exist"})
                 }
+                
             } else {
-                res.status(403).send({success: false, error: "Endpoint doesn't exist"});
+                res.status(406).send({success: false, error: "Endpoint doesn't exist"});
             }
         } catch (err) {
             res.status(500).send({success: false, error: err});
@@ -273,20 +304,24 @@ userRouter.put("/subscribe/:id", expressAsyncHandler( async(req, res) => {
 }));
 // Unsubscribe (Pull stockId from subscriptions)
 userRouter.put("/unsubscribe/:id", expressAsyncHandler( async(req, res) => {
-    if (req.body.id !== req.params.id) {
+    if (req.body.id === req.params.id) {
         try {  //Use try/catch here for clarity since potential errors on > 1 operation
-            const stock = await Stock.find({"code": req.body.code})
-            if (stock) {
+            const stock = await Stock.findOne({"code": req.body.code});
+            if (stock !== null) {
                 const user = await User.findById(req.params.id);
-                if (user.subscriptions.includes(req.body.code)) {
-                    // Update followers of target and following of current user
-                    await user.updateOne({ $pull: { subscriptions: req.body.code }});
-                    res.status(200).send({success: true, message: "Endpoint successfully unsubscribed to"})
+                if (user !== null) {
+                    if (user.subscriptions.includes(req.body.code)) {
+                        // Update followers of target and following of current user
+                        await user.updateOne({ $pull: { subscriptions: req.body.code }});
+                        res.status(200).send({success: true, message: "Endpoint successfully unsubscribed to"})
+                    } else {
+                        res.status(403).send({success: false, error: "You aren't subscribed to this endpoint"});
+                    }
                 } else {
-                    res.status(403).send({success: false, error: "You aren't subscribed to this endpoint"});
+                    res.status(406).send({success: false, error: "User doesn't exist"})
                 }
             } else {
-                res.status(403).send({success: false, error: "Endpoint doesn't exist"})
+                res.status(406).send({success: false, error: "Endpoint doesn't exist"})
             }
         } catch (err) {
             res.status(500).send({success: false, error: err});
@@ -304,13 +339,13 @@ userRouter.get("/portfolio/:id", expressAsyncHandler( async(req, res) => {
                 error: err
             });
         });
-    if (user) {
+    if (user !== null) {
         res.status(200).send({
             success: true,
             message: user.heldShares
         });
     } else {
-        res.status(403).send({
+        res.status(406).send({
             success: false,
             error: "User doesn't exist"
         });

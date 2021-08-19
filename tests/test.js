@@ -60,6 +60,12 @@ describe("DELETEALL /api/stock", () => {
     });
 });
 
+let s1Id = '';
+let s2Id = '';
+let s3Id = '';
+let s4Id = '';
+let s5Id = '';
+
 describe("POST /api/stock", () => {
     // Create 5 stocks to use in further testing
     it("Should create a new stock, status 200, success: true, message: stock", (done) => {
@@ -76,6 +82,7 @@ describe("POST /api/stock", () => {
             }
             res.status.should.equal(200);
             res.body.success.should.equal(true);
+            s1Id = res.body.message._id;
             res.body.message.should.have.property("code");
             res.body.message.should.have.property("value");
             done();
@@ -132,6 +139,7 @@ describe("POST /api/stock", () => {
             }
             res.status.should.equal(200);
             res.body.success.should.equal(true);
+            s2Id = res.body.message._id;
             res.body.message.should.have.property("code");
             res.body.message.should.have.property("value");
             done();
@@ -151,6 +159,7 @@ describe("POST /api/stock", () => {
             }
             res.status.should.equal(200);
             res.body.success.should.equal(true);
+            s3Id = res.body.message._id;
             res.body.message.should.have.property("code");
             res.body.message.should.have.property("value");
             done();
@@ -170,6 +179,7 @@ describe("POST /api/stock", () => {
             }
             res.status.should.equal(200);
             res.body.success.should.equal(true);
+            s4Id = res.body.message._id;
             res.body.message.should.have.property("code");
             res.body.message.should.have.property("value");
             done();
@@ -189,8 +199,131 @@ describe("POST /api/stock", () => {
             }
             res.status.should.equal(200);
             res.body.success.should.equal(true);
+            s5Id = res.body.message._id;
             res.body.message.should.have.property("code");
             res.body.message.should.have.property("value");
+            done();
+        });
+    });
+});
+
+describe("DELETE ONE /api/stock", () => {
+    it("Should delete stock REZ from the DB", (done) => {
+        server.delete(`/api/stock/${s5Id}`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.message.should.equal("Stock has been deleted")
+            res.body.success.should.equal(true);
+            done();
+        });
+    });
+
+    it("Should throw error because REZ is already deleted", (done) => {
+        server.delete(`/api/stock/${s5Id}`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.error.should.equal("Stock doesn't exist in db")
+            res.body.success.should.equal(false);
+            done();
+        });
+    });
+});
+
+describe("PUT/UPDATE Value /api/stock", () => {
+    it("Should edit GMT stock to have new value", (done) => {
+        server.put(`/api/stock/value/${s1Id}`)
+        .send({
+            "value": 10
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.message.should.equal("Stock successfully updated")
+            res.body.success.should.equal(true);
+            done();
+        });
+    });
+
+    it("Should throw error because REZ is already deleted", (done) => {
+        server.put(`/api/stock/value/${s5Id}`)
+        .send({
+            "value": 7
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.error.should.equal("Stock doesn't exist")
+            res.body.success.should.equal(false);
+            done();
+        });
+    });
+
+    it("Should throw error because of invalid value", (done) => {
+        server.put(`/api/stock/value/${s1Id}`)
+        .send({
+            "value": -10
+        })
+        .expect("Content-type", /json/)
+        .expect(403)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(403);
+            res.body.error.should.equal("Invalid stock value")
+            res.body.success.should.equal(false);
+            done();
+        });
+    });
+});
+
+describe("GET /api/stock", () => {
+    it("Should get GMT stock", (done) => {
+        server.get(`/api/stock/${s1Id}`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.message.should.have.property("code");
+            res.body.message.code.should.equal("GMT");
+            res.body.message.value.should.equal(10);
+            res.body.success.should.equal(true);
+            done();
+        });
+    });
+
+    it("Should throw error when get REZ stock", (done) => {
+        server.get(`/api/stock/${s5Id}`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.error.should.equal("Stock with that Id doesn't exist");
+            res.body.success.should.equal(false);
             done();
         });
     });
@@ -204,6 +337,7 @@ describe("POST /api/stock", () => {
 
 let t1_id = "";
 let t2_id = "";
+let t3_id = "";
 
 
 
@@ -309,6 +443,28 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
         });
     });
 
+    it("Should return success: true, _id, name, token", (done) => {
+        server.post("/api/user/register")
+        .send({
+            "name": "TestUser3",
+            "password": "123"
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.should.have.property('_id');
+            t3_id = res.body._id;
+            res.body.should.have.property('token');
+            res.body.success.should.equal(true);
+            res.body.name.should.equal("TestUser3");
+            done();
+        });
+    });
+
     // Also throws server error, doesnt lead to complete crash though
     it("Should return success: false, err: user E11000 duplicate key...", (done) => {
         server.post("/api/user/register")
@@ -351,26 +507,26 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
         });
     });
 
-    it("Should return success: false, message: Invalid Username", (done) => {
+    it("Should return success: false, error: Invalid Username", (done) => {
         server.post("/api/user/signin")
         .send({
             "name": "DoesntExist",
             "password": "123"
         })
         .expect("Content-type", /json/)
-        .expect(401)
+        .expect(406)
         .end((err, res) => {
             if (err) {
                 done(err);
             }
-            res.status.should.equal(401);
+            res.status.should.equal(406);
             res.body.success.should.equal(false);
-            res.body.message.should.equal("Invalid Username");
+            res.body.error.should.equal("User doesn't exist");
             done();
         });
     });
 
-    it("Should return success: false, message: Invalid Password", (done) => {
+    it("Should return success: false, error: Invalid Password", (done) => {
         server.post("/api/user/signin")
         .send({
             "name": "TestUser1",
@@ -384,12 +540,12 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
             }
             res.status.should.equal(401);
             res.body.success.should.equal(false);
-            res.body.message.should.equal("Invalid Password");
+            res.body.error.should.equal("Invalid Password");
             done();
         });
     });
 
-    it("Should return success: false, message: Missing Username or Password", (done) => {
+    it("Should return success: false, error: Missing Username or Password", (done) => {
         server.post("/api/user/signin")
         .send({
             "password": "123"
@@ -402,7 +558,7 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
             }
             res.status.should.equal(400);
             res.body.success.should.equal(false);
-            res.body.message.should.equal("Missing Username or Password");
+            res.body.error.should.equal("Missing Username or Password");
             done();
         });
     });
@@ -420,7 +576,7 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
             }
             res.status.should.equal(400);
             res.body.success.should.equal(false);
-            res.body.message.should.equal("Missing Username or Password");
+            res.body.error.should.equal("Missing Username or Password");
             done();
         });
     });
@@ -435,7 +591,27 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
             }
             res.status.should.equal(400);
             res.body.success.should.equal(false);
-            res.body.message.should.equal("Missing Username or Password");
+            res.body.error.should.equal("Missing Username or Password");
+            done();
+        });
+    });
+});
+
+describe("DELETE /api/user/:id", () => {
+    it("Should return 200 success: true message: Account has been deleted", (done) => {
+        server.delete(`/api/user/${t3_id}`)
+        .send({
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Account has been deleted");
             done();
         });
     });
@@ -528,96 +704,654 @@ describe("UPDATE /api/user/:id", () => {
         });
     });
 
-    // it("Should return 401, success: false, error: You cannot follow yourself", (done) => {
-    //     server
-    //     .put(`/api/user/follow/${t1_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(401)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(401);
-    //         res.body.success.should.equal(false);
-    //         res.body.error.should.equal("You cannot follow yourself");
-    //         done();
-    //     });
-    // });
+    // ADD TO WALLET
 
-    // Follow and Unfollow from twitter api should be similar to stock api subscribe and unsubcribe (Just add code instead of ID)
-    // it("Should return 200, success: true, message: User successfully followed", (done) => {
-    //     server
-    //     .put(`/api/user/follow/${t2_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(200)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(200);
-    //         res.body.success.should.equal(true);
-    //         res.body.message.should.equal("User successfully followed");
-    //         done();
-    //     });
-    // });
-    // it("Should return 403, success: false, error: You already follow this user", (done) => {
-    //     server
-    //     .put(`/api/user/follow/${t2_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(403)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(403);
-    //         res.body.success.should.equal(false);
-    //         res.body.error.should.equal("You already follow this user");
-    //         done();
-    //     });
-    // });
-    // it("Should return 401, success: false, error: You cannot unfollow yourself", (done) => {
-    //     server
-    //     .put(`/api/user/unfollow/${t1_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(401)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(401);
-    //         res.body.success.should.equal(false);
-    //         res.body.error.should.equal("You cannot unfollow yourself");
-    //         done();
-    //     });
-    // });
-    // it("Should return 200, success: true, message: User successfully unfollowed", (done) => {
-    //     server
-    //     .put(`/api/user/unfollow/${t2_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(200)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(200);
-    //         res.body.success.should.equal(true);
-    //         res.body.message.should.equal("User successfully unfollowed");
-    //         done();
-    //     });
-    // });
-    // it("Should return 403, success: false, error: You don't follow this user", (done) => {
-    //     server
-    //     .put(`/api/user/unfollow/${t2_id}`)
-    //     .send({"id": `${t1_id}`})
-    //     .expect(403)
-    //     .end(function(err,res){
-    //         if (err) {
-    //             done(err);
-    //         }
-    //         res.status.should.equal(403);
-    //         res.body.success.should.equal(false);
-    //         res.body.error.should.equal("You don't follow this user");
-    //         done();
-    //     });
-    // });
+    it("Should return success: true, message: Wallet successfully updated", (done) => {
+        server.put(`/api/user/add/wallet/${t1_id}`)
+        .send({
+            "amount": 500,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Wallet successfully updated");
+            done();
+        });
+    });
+
+    it("Should return success: true, message: Wallet successfully updated", (done) => {
+        server.put(`/api/user/add/wallet/${t1_id}`)
+        .send({
+            "amount": 200.23,  // wallet goes to 700.23 (200.23+500)
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Wallet successfully updated");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You can only update your own wallet", (done) => {
+        server.put(`/api/user/add/wallet/${t1_id}`)
+        .send({
+            "amount": 200.23,
+            "id": t2_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only update your own wallet");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You cannot add a negative value to wallet", (done) => {
+        server.put(`/api/user/add/wallet/${t1_id}`)
+        .send({
+            "amount": -500,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(403)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(403);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You cannot add a negative value to wallet");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: User doesn't exist", (done) => {
+        server.put(`/api/user/add/wallet/${t3_id}`)
+        .send({
+            "amount": 500,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You can only update your own wallet", (done) => {
+        server.put(`/api/user/add/wallet/${t1_id}`)
+        .send({
+            "amount": 500,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only update your own wallet");
+            done();
+        });
+    });
+
+    // BUY AND SELL STOCK
+
+    // BUY
+    it("Should return success: true, message: Share purchase successful", (done) => {
+        server.put(`/api/user/buy/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 5,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Share purchase successful");
+            done();
+        });
+    });
+
+    it("Should return success: true, message: Share purchase successful", (done) => {
+        server.put(`/api/user/buy/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Share purchase successful");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: Insufficient Funds", (done) => {
+        server.put(`/api/user/buy/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("Insufficient funds");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: User doesn't exist", (done) => {
+        server.put(`/api/user/buy/stock/${t3_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: Requested stock doesn't exist", (done) => {
+        server.put(`/api/user/buy/stock/${t1_id}`)
+        .send({
+            "code": "WOW",
+            "amount": 10000,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("Requested stock doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You can only buy stocks for your own account", (done) => {
+        server.put(`/api/user/buy/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only buy stocks for your own account");
+            done();
+        });
+    });
+
+    // SELL
+    it("Should return success: true, message: Shares successfully sold", (done) => {
+        server.put(`/api/user/sell/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 3,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Shares successfully sold");
+            done();
+        });
+    });
+
+    it("Should return success: true, message: Shares successfully sold", (done) => {
+        server.put(`/api/user/sell/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Shares successfully sold");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: User doesn't exist", (done) => {
+        server.put(`/api/user/sell/stock/${t3_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: Requested stock doesn't exist", (done) => {
+        server.put(`/api/user/sell/stock/${t1_id}`)
+        .send({
+            "code": "WOW",
+            "amount": 10000,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("Requested stock doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You can only sell stocks for your own account", (done) => {
+        server.put(`/api/user/sell/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only sell stocks for your own account");
+            done();
+        });
+    });
+
+    it("Should return success: false, error: You can't sell shares you don't own", (done) => {
+        server.put(`/api/user/sell/stock/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "amount": 10000,
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can't sell shares you don't own");
+            done();
+        });
+    });
+    // Works perfect, t1_id ends with 680 wallet and 2 GMT shares
+
+    // SUBSCRIBE AND UNSUBSCRIBE
+
+    // SUBSCRIBE
+
+    it("Should return success: true, message: Endpoint successfully subscribed to", (done) => {
+        server.put(`/api/user/subscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Endpoint successfully subscribed to");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: You already subscribe to this endpoint", (done) => {
+        server.put(`/api/user/subscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(403)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(403);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You already subscribe to this endpoint");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: Endpoint doesn't exist", (done) => {
+        server.put(`/api/user/subscribe/${t1_id}`)
+        .send({
+            "code": "WOW",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("Endpoint doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: User doesn't exist", (done) => {
+        server.put(`/api/user/subscribe/${t3_id}`)
+        .send({
+            "code": "GMT",
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: You can only edit your own subscriptions", (done) => {
+        server.put(`/api/user/subscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only edit your own subscriptions");
+            done();
+        });
+    });
+
+    // UNSUBSCRIBE
+
+    it("Should return success: true, message: Endpoint successfully unsubscribed to", (done) => {
+        server.put(`/api/user/unsubscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.equal("Endpoint successfully unsubscribed to");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: You aren't subscribed to this endpoint", (done) => {
+        server.put(`/api/user/unsubscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(403)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(403);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You aren't subscribed to this endpoint");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: Endpoint doesn't exist", (done) => {
+        server.put(`/api/user/unsubscribe/${t1_id}`)
+        .send({
+            "code": "WOW",
+            "id": t1_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("Endpoint doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: User doesn't exist", (done) => {
+        server.put(`/api/user/unsubscribe/${t3_id}`)
+        .send({
+            "code": "GMT",
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist");
+            done();
+        });
+    });
+
+    it("Should return success: false, message: You can only edit your own subscriptions", (done) => {
+        server.put(`/api/user/unsubscribe/${t1_id}`)
+        .send({
+            "code": "GMT",
+            "id": t3_id
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("You can only edit your own subscriptions");
+            done();
+        });
+    });
+
+});
+
+// USER GET TESTS
+
+describe("GET Tests for User api/user", () => {
+    // PORTFOLIO
+    it("Should get the portfolio map of user successfully", (done) => {
+        server.get(`/api/user/portfolio/${t1_id}`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.should.have.property("message");
+            done();
+        });
+    });
+    it("Should throw 406 because user doesnt exist", (done) => {
+        server.get(`/api/user/portfolio/${t3_id}`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist")
+            done();
+        });
+    });
+    // WALLET
+    it("Should get user wallet successfully", (done) => {
+        server.get(`/api/user/wallet/${t1_id}`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.should.have.property("message");
+            done();
+        });
+    });
+    it("Should return success: false error: User doesn't exist", (done) => {
+        server.get(`/api/user/wallet/${t3_id}`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist")
+            done();
+        });
+    });
+
+    // USER INFO
+    it("Should return success: true message: UserInfo (Not password)", (done) => {
+        server.get(`/api/user/${t1_id}`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.should.have.property("message");
+            res.body.message.should.have.property("name");
+            done();
+        });
+    });
+    it("Should return success: false error: User doesn't exist", (done) => {
+        server.get(`/api/user/${t3_id}`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.success.should.equal(false);
+            res.body.error.should.equal("User doesn't exist")
+            done();
+        });
+    });
+
 });
