@@ -9,11 +9,12 @@ const stockRouter = express.Router();
 // Add stock (Create stock, db should inforce uniqueness of idCode)
 stockRouter.post("/", expressAsyncHandler( async(req, res) => {
     const newStock = new Stock(req.body);
-    const createdStock = newStock.save()
+    const createdStock = await newStock.save()
         .catch(err => {
-            res.status(500).send({success: false, error: err});
+            console.log(err.message);
+            res.status(401).send({success: false, error: err.message});
             return;
-        })
+        });
     res.status(200).send({
         success: true,
         message: createdStock
@@ -23,7 +24,7 @@ stockRouter.post("/", expressAsyncHandler( async(req, res) => {
 stockRouter.delete("/:stockId", expressAsyncHandler( async(req, res) => {
     await Stock.findByIdAndDelete(req.params.stockId)
         .catch(err => {
-            res.status(500).send({success: false, error: err});
+            res.status(500).send({success: false, error: err.message});
             return;
         })
     res.status(200).send({success: true, message: "Stock has been deleted"});
@@ -41,7 +42,7 @@ stockRouter.put("/value/:stockId", expressAsyncHandler( async(req, res) => {
             $set: req.body
         }).catch(err => {
             // error 500 should go if req.body.code is invalid (not 3 chars)
-            res.status(500).send({success: false, error: err});
+            res.status(500).send({success: false, error: err.message});
             return;
         })
         res.status(200).send({success: true, message: "User successfully updated"});
@@ -55,7 +56,7 @@ stockRouter.get("/:stockId", expressAsyncHandler( async(req, res) => {
         .catch(err => {
             res.status(500).send({
                 success: false,
-                error: err
+                error: err.message
             });
             return;
         });

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
     {
-        name: { type: String, required: true, unique: true },
+        name: { type: String, required: true, unique: [true, "name already taken"] },
         password: { type: String, required: true },
         wallet: { type: Number, default: 0 },
         heldShares: { type: Map, of: String }, // Holds map where name of share points to amount user owns of that share

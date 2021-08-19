@@ -4,12 +4,9 @@ import should from 'should';
 let server = supertest.agent("http://localhost:5000");
 
 /*
-    USER API TESTING
-    ----------------
+    GENERAL API TESTING
+    -------------------
 */
-
-let t1_id = "";
-let t2_id = "";
 
 describe("GET /badlink", () => {
     it("Should return 404", (done) => {
@@ -40,6 +37,175 @@ describe("GET /", () => {
         });
     });
 });
+
+/*
+    STOCK API TESTING
+    -----------------
+*/
+
+describe("DELETEALL /api/stock", () => {
+    it("Should delete all stocks from the DB to prep for further tests", (done) => {
+        server.delete('/api/stock/remove/all')
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.message.should.equal("All stocks have been deleted")
+            res.body.success.should.equal(true);
+            done();
+        });
+    });
+});
+
+describe("POST /api/stock", () => {
+    // Create 5 stocks to use in further testing
+    it("Should create a new stock, status 200, success: true, message: stock", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "GMT",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.have.property("code");
+            res.body.message.should.have.property("value");
+            done();
+        });
+    });
+    // Server has fatal error here -> Doesnt crash on repeat in user so idk why
+    it("Should not create a new stock, status 401, success: false, error: err", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "GMT",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.should.have.property("error");
+            done();
+        });
+    });
+    it("Should create a new stock, status 401, success: false, error: err", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "GM",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(401)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(401);
+            res.body.success.should.equal(false);
+            res.body.should.have.property("error");
+            done();
+        });
+    });
+    it("Should create a new stock, status 200, success: true, message: stock", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "ABC",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.have.property("code");
+            res.body.message.should.have.property("value");
+            done();
+        });
+    });
+    it("Should create a new stock, status 200, success: true, message: stock", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "DER",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.have.property("code");
+            res.body.message.should.have.property("value");
+            done();
+        });
+    });
+    it("Should create a new stock, status 200, success: true, message: stock", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "CAM",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.have.property("code");
+            res.body.message.should.have.property("value");
+            done();
+        });
+    });
+    it("Should create a new stock, status 200, success: true, message: stock", (done) => {
+        server.post('/api/stock/')
+        .send({
+            "code": "REZ",
+            "value": 5
+        })
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.success.should.equal(true);
+            res.body.message.should.have.property("code");
+            res.body.message.should.have.property("value");
+            done();
+        });
+    });
+});
+
+
+/*
+    USER API TESTING
+    ----------------
+*/
+
+let t1_id = "";
+let t2_id = "";
+
+
 
 describe("DELETEALL /api/user", () => {
     it("Should delete all users from DB to prep for tests; return: success: true, message: All users have been deleted", (done) =>{
@@ -82,38 +248,38 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
         });
     });
 
-    it("Should return 406 success: false, error: Username and Password must not contain spaces", (done) => {
+    it("Should return 403 success: false, error: Username and Password must not contain spaces", (done) => {
         server.post("/api/user/register")
         .send({
             "name": "Test User 1",
             "password": "123"
         })
         .expect("Content-type", /json/)
-        .expect(406)
+        .expect(403)
         .end((err, res) => {
             if (err) {
                 done(err);
             }
-            res.status.should.equal(406);
+            res.status.should.equal(403);
             res.body.success.should.equal(false);
             res.body.error.should.equal("Username and Password must not contain spaces");
             done();
         });
     });
 
-    it("Should return 406 success: false, error: Username and Password must not contain spaces", (done) => {
+    it("Should return 403 success: false, error: Username and Password must not contain spaces", (done) => {
         server.post("/api/user/register")
         .send({
             "name": "TestUser1",
             "password": "1 2 3"
         })
         .expect("Content-type", /json/)
-        .expect(406)
+        .expect(403)
         .end((err, res) => {
             if (err) {
                 done(err);
             }
-            res.status.should.equal(406);
+            res.status.should.equal(403);
             res.body.success.should.equal(false);
             res.body.error.should.equal("Username and Password must not contain spaces");
             done();
@@ -158,7 +324,7 @@ describe("POST/AUTH Routes /api/user", () => {  // Returns status and success or
             }
             res.status.should.equal(401);
             res.body.success.should.equal(false);
-            res.body.err.should.equal("E11000 duplicate key error collection: leapgrad_twitter.users index: name_1 dup key: { name: \"TestUser1\" }");
+            res.body.err.should.equal("E11000 duplicate key error collection: leapgrad_stocks.users index: name_1 dup key: { name: \"TestUser1\" }");
             done();
         });
     });
@@ -292,32 +458,32 @@ describe("UPDATE /api/user/:id", () => {
         });
     });
 
-    it("Should return 406 success: false, error: Username must not contain spaces", (done) => {
+    it("Should return 403 success: false, error: Username must not contain spaces", (done) => {
         server
         .put(`/api/user/${t1_id}`)
         .send({"id": `${t1_id}`, "name": "Test User"})
-        .expect(406)
+        .expect(403)
         .end(function(err,res){
             if (err) {
                 done(err);
             }
-            res.status.should.equal(406);
+            res.status.should.equal(403);
             res.body.success.should.equal(false);
             res.body.error.should.equal("Username must not contain spaces");
             done();
         });
     });
 
-    it("Should return 406 success: false, error: Password must not contain spaces", (done) => {
+    it("Should return 403 success: false, error: Password must not contain spaces", (done) => {
         server
         .put(`/api/user/${t1_id}`)
         .send({"id": `${t1_id}`, "name": "TestUser", "password": "1 2 3"})
-        .expect(406)
+        .expect(403)
         .end(function(err,res){
             if (err) {
                 done(err);
             }
-            res.status.should.equal(406);
+            res.status.should.equal(403);
             res.body.success.should.equal(false);
             res.body.error.should.equal("Password must not contain spaces");
             done();
@@ -362,21 +528,22 @@ describe("UPDATE /api/user/:id", () => {
         });
     });
 
-    it("Should return 401, success: false, error: You cannot follow yourself", (done) => {
-        server
-        .put(`/api/user/follow/${t1_id}`)
-        .send({"id": `${t1_id}`})
-        .expect(401)
-        .end(function(err,res){
-            if (err) {
-                done(err);
-            }
-            res.status.should.equal(401);
-            res.body.success.should.equal(false);
-            res.body.error.should.equal("You cannot follow yourself");
-            done();
-        });
-    });
+    // it("Should return 401, success: false, error: You cannot follow yourself", (done) => {
+    //     server
+    //     .put(`/api/user/follow/${t1_id}`)
+    //     .send({"id": `${t1_id}`})
+    //     .expect(401)
+    //     .end(function(err,res){
+    //         if (err) {
+    //             done(err);
+    //         }
+    //         res.status.should.equal(401);
+    //         res.body.success.should.equal(false);
+    //         res.body.error.should.equal("You cannot follow yourself");
+    //         done();
+    //     });
+    // });
+
     // Follow and Unfollow from twitter api should be similar to stock api subscribe and unsubcribe (Just add code instead of ID)
     // it("Should return 200, success: true, message: User successfully followed", (done) => {
     //     server
