@@ -60,6 +60,29 @@ stockRouter.put("/value/:stockId", expressAsyncHandler( async(req, res) => {
     }
 }));
 // Get stock -> Uses stock code so users can subscribe to this endpoint
+stockRouter.get("/code/:stockCode", expressAsyncHandler( async(req, res) => {
+    const stock = await Stock.findOne({"code": req.params.stockCode})
+        .catch(err => {
+            res.status(500).send({
+                success: false,
+                error: err.message
+            });
+            return;
+        });
+    if (stock !== null) {
+        res.status(200).send({
+            success: true,
+            message: stock
+        });
+    } else {
+        res.status(406).send({
+            success: false,
+            error: "Stock with that Id doesn't exist"
+        });
+    }
+}));
+
+// Get by Id
 stockRouter.get("/:stockId", expressAsyncHandler( async(req, res) => {
     const stock = await Stock.findById(req.params.stockId)
         .catch(err => {

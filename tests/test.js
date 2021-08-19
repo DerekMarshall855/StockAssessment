@@ -327,6 +327,38 @@ describe("GET /api/stock", () => {
             done();
         });
     });
+
+    it("Should get GMT stock", (done) => {
+        server.get(`/api/stock/code/GMT`)
+        .expect("Content-type", /json/)
+        .expect(200)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(200);
+            res.body.message.should.have.property("code");
+            res.body.message.code.should.equal("GMT");
+            res.body.message.value.should.equal(10);
+            res.body.success.should.equal(true);
+            done();
+        });
+    });
+
+    it("Should throw error when get REZ stock", (done) => {
+        server.get(`/api/stock/code/REZ`)
+        .expect("Content-type", /json/)
+        .expect(406)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            res.status.should.equal(406);
+            res.body.error.should.equal("Stock with that Id doesn't exist");
+            res.body.success.should.equal(false);
+            done();
+        });
+    });
 });
 
 
